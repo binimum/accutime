@@ -59,32 +59,52 @@ console.log(accutime.getTime()); // returns unix ms timestamp eg. 1774728087314
 
 ## Testing
 
-From testing, the WS implementation consistently gets within +/- 2ms off normal NTP which is pretty reasonable. Example below:
+From testing, the WS implementation consistently gets within +/- 2ms off normal NTP which is pretty reasonable given normal drift. Example below:
 
-Reference:
+### Reference
 
 ```bash
 sudo sntp time.cloudflare.com
 +0.000962 +/- 0.016815 time.cloudflare.com
 ```
-Accutime:
+### Accutime on Bun
 
 ```
 AccuTime consistency test
 
-Run  1/10: Syncing... Offset: -2ms
-Run  2/10: Syncing... Offset: -1ms
-Run  3/10: Syncing... Offset: -1ms
-Run  4/10: Syncing... Offset: 0ms
-Run  5/10: Syncing... Offset: -2ms
-Run  6/10: Syncing... Offset: -2ms
-Run  7/10: Syncing... Offset: -2ms
-Run  8/10: Syncing... Offset: -2ms
-Run  9/10: Syncing... Offset: -2ms
-Run 10/10: Syncing... Offset: -1ms
+Run  1/10: Syncing... Offset: +1ms
+Run  2/10: Syncing... Offset: +1ms
+Run  3/10: Syncing... Offset: +1ms
+Run  4/10: Syncing... Offset: +1ms
+Run  5/10: Syncing... Offset: +1ms
+Run  6/10: Syncing... Offset: +1ms
+Run  7/10: Syncing... Offset: +1ms
+Run  8/10: Syncing... Offset: +1ms
+Run  9/10: Syncing... Offset: +1ms
+Run 10/10: Syncing... Offset: +1ms
 
-Min Offset : -2ms
-Max Offset : 0ms
-Average    : -1.50ms
-Spread     : 2ms
+Min Offset : 1ms
+Max Offset : 1ms
+Average    : 1.00ms
+Spread     : 0ms
+```
+
+### Accutime on Chromium
+
+```
+Run  1/10: Syncing... Offset: +1ms
+Run  2/10: Syncing... Offset: +1ms
+Run  3/10: Syncing... Offset: +1ms
+Run  4/10: Syncing... Offset: +1ms
+Run  5/10: Syncing... Offset: +1ms
+Run  6/10: Syncing... Offset: +1ms
+Run  7/10: Syncing... Offset: +1ms
+Run  8/10: Syncing... Offset: +1ms
+Run  9/10: Syncing... Offset: +1ms
+Run 10/10: Syncing... Offset: +1ms
+
+Min Offset : 1ms
+Max Offset : 1ms
+Average    : 1.00ms
+Spread     : 0ms
 ```
