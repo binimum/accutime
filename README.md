@@ -7,7 +7,7 @@ Accurate time for the browser.
 ### Browser
 
 ```js
-<script src="https://cdn.jsdelivr.net/npm/accutime@latest/dist/accutime.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/accutime/dist/index.global.min.js"></script>
 ```
 
 ### CommonJS
