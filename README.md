@@ -1,6 +1,6 @@
 # accutime
 
-Accurate time for the browser.
+Accurate time for the browser (but also works everywhere else). Uses WS for ultra precise time syncing but can fallback to plain HTTPS if needed.
 
 ## Use me
 
@@ -55,6 +55,27 @@ console.log(accutime.getTime()); // returns unix ms timestamp eg. 1774728087314
         });
     });
 </script>
+```
+
+## CommonJS
+
+If you are on CommonJS you are most likely on Node - I would recommend using a client that supports the actual NTP protocol instead, like (`ntp-time`)[https://www.npmjs.com/package/ntp-time].
+
+```js
+// To use WebSockets in NodeJS, you have to install `ws` first.
+// Run this command: `npm install ws`
+// And uncomment the following lines of code:
+// const WebSocket = require('ws');
+// global.WebSocket = WebSocket;
+// global.window = global;
+
+const AccuTime = require("accutime").default || require("accutime");
+const accutime = new AccuTime();
+
+(async () => {
+  await accutime.sync(); // Run every time you want to sync
+  console.log(accutime.getTime()); // returns unix ms timestamp eg. 1774728087314
+})();
 ```
 
 ## Testing
