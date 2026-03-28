@@ -1,5 +1,8 @@
 // const accutime = require('../dist/accutime.js');
 
-import { getTime } from '../dist/accutime.min.mjs';
+import AccuTime from "../dist/index.mjs";
 
-console.log(getTime())
+const accutime = new AccuTime();
+
+await accutime.sync();
+console.log(accutime.getTime());

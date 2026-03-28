@@ -1,8 +1,15 @@
-<script src="dist/accutime.min.js"></script>
+<script src="dist/index.global.js"></script>
 <script type="text/javascript">
+    const accutime = new AccuTime.default();
+
     document.addEventListener("DOMContentLoaded", function () {
-        window.accutime.getTime().then(function (time) {
-            console.log(time);
+        const startTime = performance.now();
+        accutime.sync().then(() => {
+            const endTime = performance.now();
+            console.log("Synchronized time:", accutime.getTime());
+            console.log(
+                `Sync completed in ${endTime - startTime} milliseconds.`,
+            );
         });
     });
 </script>

@@ -1,56 +1,133 @@
-import axios from 'axios';
-
-export async function _makeRequest(url: string) {
-    const begin = new Date();
-    let data;
-    let response = await axios.get(url);
-    if (response.status !== 200) throw new Error("Bad response from server");
-    data = response.data;
-    return [data, (new Date().getTime() - begin.getTime())];
+export interface AccuTimeOptions {
+  pingCount?: number;
 }
 
-// BEGIN different time sources
-export async function worldTimeApi(append: string) { // no private methods below ES6
-    return _makeRequest("https://worldtimeapi.org/api/"+append);
-}
-export function ntpJS() {
-    // https://use.ntpjs.org/v1/time.json
-    return _makeRequest("https://use.ntpjs.org/v1/time.json");
+interface SyncResult {
+  rtt: number;
+  offset: number;
 }
 
+export class AccuTime {
+  public readonly domain: string;
+  public readonly fallbackUrl: string;
+  public offset: number;
+  public readonly PING_COUNT: number;
+  private syncPromise: Promise<number> | null = null;
 
-export function average(arr: Array<number>) {
-    return arr.reduce( ( p, c ) => p + c, 0 ) / arr.length; // function average
-}
+  constructor(options: AccuTimeOptions = {}) {
+    this.domain = 'time-api.binimum.org';
+    this.fallbackUrl = 'https://use.ntpjs.org/v1/time.json';
+    this.offset = 0;
+    this.PING_COUNT = options.pingCount || 10;
+  }
 
-export async function getTime(timezone: string = "") {
-    let worldTimeAPI;
-    let ntpJS1;
-    let worldTimeAPIDate;
-    let meanTime;
+  /**
+   * Initiates the synchronization process.
+   * @returns A promise that resolves to the calculated offset in milliseconds.
+   */
+  public async sync(): Promise<number> {
+    // Prevent concurrent syncs if one is already running on this instance
+    if (this.syncPromise) return this.syncPromise;
 
-    if (timezone === "" || timezone === undefined) {
-        // console.log("No timezone provided, using IP location")
-        worldTimeAPI = await worldTimeApi("ip");
-        ntpJS1 = await ntpJS(); // {"now":1706718224.761073,"backoff":320,"__server":"lhrlhr"}
-        worldTimeAPIDate = new Date(Date.parse(worldTimeAPI[0].datetime));
-        meanTime = average([worldTimeAPIDate.getTime(), Math.floor(ntpJS1[0].now*1000)]);
+    this.syncPromise = (async () => {
+      try {
+        if (typeof window !== 'undefined' && 'WebSocket' in window) {
+          this.offset = await this.syncWebSocket();
+        } else {
+          throw new Error("WebSocket not supported.");
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn(`accutime: WS failed (${msg}). Falling back to HTTP...`);
+        this.offset = await this.syncHttp();
+      }
+      return this.offset;
+    })();
+
+    return this.syncPromise;
+  }
+
+  private syncWebSocket(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocket(`wss://${this.domain}`);
+      let pingsDone = 0;
+      const results: SyncResult[] = [];
+      let currentT0: number;
+
+      ws.onopen = () => ping();
+
+      const ping = () => {
+        if (pingsDone >= this.PING_COUNT) {
+          ws.close();
+          resolve(this.calculateFinalOffset(results));
+          return;
+        }
+        currentT0 = Date.now();
+        ws.send("ping");
+      };
+
+      ws.onmessage = (event: MessageEvent) => {
+        const t3 = Date.now();
+        const t1 = parseInt(event.data, 10);
+        results.push(this.calculateMetrics(currentT0, t1, t3));
+        pingsDone++;
+        setTimeout(ping, 50);
+      };
+
+      ws.onerror = () => reject(new Error("WebSocket connection failed"));
+    });
+  }
+
+  private async syncHttp(): Promise<number> {
+    const results: SyncResult[] = [];
+
+    for (let i = 0; i < this.PING_COUNT; i++) {
+      const t0 = Date.now();
+      try {
+        const response = await fetch(this.fallbackUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json() as { now: number };
+        const t3 = Date.now();
+        const t1 = Math.round(data.now * 1000);
+
+        results.push(this.calculateMetrics(t0, t1, t3));
+      } catch (error) {
+        // Silently ignore individual dropped pings
+      }
+
+      await new Promise(res => setTimeout(res, 100));
     }
-    else {
-        // TODO: get NTPJS timezone
-        worldTimeAPI = await worldTimeApi("timezone/"+timezone);
-        worldTimeAPIDate = new Date(Date.parse(worldTimeAPI[0].datetime));
-        meanTime = worldTimeAPIDate.getTime();
+
+    if (results.length === 0) {
+      console.warn("accutime: Both WS and HTTP sync failed entirely. Defaulting to local time.");
+      return 0;
     }
+    return this.calculateFinalOffset(results);
+  }
 
-    worldTimeAPIDate.setMilliseconds(worldTimeAPIDate.getMilliseconds() - worldTimeAPI[1]);
-    
-    let date = new Date(meanTime);
+  private calculateMetrics(t0: number, t1: number, t3: number): SyncResult {
+    const rtt = t3 - t0;
+    const latency = rtt / 2;
+    const estimatedServerTime = t1 + latency;
+    const offset = estimatedServerTime - t3;
+    return { rtt, offset };
+  }
 
-    return {
-        datetime: date.toISOString(),
-        timezone: worldTimeAPI[0].timezone,
-        utc_offset: worldTimeAPI[0].utc_offset,
-        unix: date.getTime(),
-    };
+  private calculateFinalOffset(results: SyncResult[]): number {
+    results.sort((a, b) => a.rtt - b.rtt);
+    const bestResults = results.slice(0, Math.ceil(results.length / 2));
+    const totalOffset = bestResults.reduce((sum, res) => sum + res.offset, 0);
+    return Math.round(totalOffset / bestResults.length);
+  }
+
+  /**
+   * Returns the current highly-accurate synchronized timestamp in milliseconds.
+   */
+  public getTime(): number {
+    return Date.now() + this.offset;
+  }
 }
+
+// Default export for cleaner imports
+export default AccuTime;
