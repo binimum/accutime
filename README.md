@@ -2,39 +2,12 @@
 
 Accurate time for the browser (but also works everywhere else). Uses WS for ultra precise time syncing but can fallback to plain HTTPS if needed.
 
-## Use me
-
-### Browser
-
-```js
-<script src="https://cdn.jsdelivr.net/npm/accutime/dist/index.global.min.js"></script>
-```
-
-### CommonJS
-
-```shell
-npm i accutime
-```
-
-```js
-const accutime = require('accutime');
-```
-### ESM
-
-```shell
-npm i accutime
-```
-
-```js
-import accutime from 'accutime';
-```
-
 ## Usage
 
 ## ESM
 
 ```js
-import AccuTime from "../dist/index.mjs";
+import AccuTime from "accutime";
 
 const accutime = new AccuTime();
 
