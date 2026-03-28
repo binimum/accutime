@@ -59,7 +59,7 @@ console.log(accutime.getTime()); // returns unix ms timestamp eg. 1774728087314
 
 ## CommonJS
 
-If you are on CommonJS you are most likely on Node - I would recommend using a client that supports the actual NTP protocol instead, like (`ntp-time`)[https://www.npmjs.com/package/ntp-time].
+If you are on CommonJS you are most likely on Node - I would recommend using a client that supports the actual NTP protocol instead, like [`ntp-time`](https://www.npmjs.com/package/ntp-time).
 
 ```js
 // To use WebSockets in NodeJS, you have to install `ws` first.
@@ -91,8 +91,6 @@ sudo sntp time.cloudflare.com
 ### Accutime on Bun
 
 ```
-AccuTime consistency test
-
 Run  1/10: Syncing... Offset: +1ms
 Run  2/10: Syncing... Offset: +1ms
 Run  3/10: Syncing... Offset: +1ms
